@@ -1,5 +1,9 @@
 {{ config(
-    materialized='table'
+     materialized='incremental',
+      unique_key='customer_id',
+    target_schema='test',
+    strategy='timestamp',
+    updated_at='last_update_time'
 ) }}
 WITH source_data AS (
   SELECT
@@ -11,7 +15,13 @@ WITH source_data AS (
     NumberOfItemsShipped,
     NumberOfItemsUnshipped,
     _daton_batch_runtime
-  FROM `hallowed-garden-418610.test.Listordersdetails`
+  FROM `hallowed-garden-418610.test.Listordersdetails` 
+
+  {% if is_incremental() %}
+
+WHERE _daton_batch_runtime > (SELECT MAX(_daton_batch_runtime) FROM {{this}})
+         
+{% endif %}
 ),
 customer_aggregations AS (
   SELECT
@@ -40,7 +50,6 @@ Shipment_Service_Level_status_counts AS (
   FROM source_data
   GROUP BY ShipServiceLevel
 )
-
   
 SELECT
   c.customer_id,
@@ -54,3 +63,5 @@ SELECT
 FROM customer_aggregations c
 JOIN order_status_counts o ON c.OrderStatus = o.OrderStatus
 JOIN Shipment_Service_Level_status_counts s ON c.ShipServiceLevel = s.ShipServiceLevel
+
+

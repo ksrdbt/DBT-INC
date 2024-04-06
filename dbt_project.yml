@@ -18,5 +18,3 @@ models:
   Firstproj:
     customer_table:
       materialized: table
-    customer_table_incremental:
-      materialized: incremental
